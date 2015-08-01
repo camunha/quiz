@@ -21,12 +21,12 @@ exports.index = function(req, res){
 		var filtro = req.query.search;
 		filtro = "%" + filtro.replace(" ", "%") + "%";
 		models.Quiz.findAll({where: ["lower(pregunta) like ?", filtro.toLowerCase()],order:'pregunta ASC'}).then(function(quizes){
-			res.render('quizes/index.ejs', {quizes: quizes});
+			res.render('quizes/index.ejs', {quizes: quizes, errors: []});
 		}).catch(function(error){ next(error); });
 	}
 	else{
 		models.Quiz.findAll().then(function(quizes){
-			res.render('quizes/index.ejs', {quizes: quizes});
+			res.render('quizes/index.ejs', {quizes: quizes, errors: []});
 		}).catch(function(error){ next(error); });
 	}
 };
@@ -35,7 +35,7 @@ exports.index = function(req, res){
 exports.show = function(req, res){
 	//res.render('quizes/question', {pregunta: 'Capital de Italia'});
 	models.Quiz.find(req.params.quizId).then(function(quiz){
-		res.render('quizes/show', {quiz: req.quiz});
+		res.render('quizes/show', {quiz: req.quiz, errors: []});
 	})
 };
 
@@ -44,10 +44,38 @@ exports.answer = function(req, res){
 	//if (req.query.respuesta === 'Roma'){
 	models.Quiz.find(req.params.quizId).then(function(quiz){
 		if (req.query.respuesta === req.quiz.respuesta){
-			res.render('quizes/answer', {quiz: req.quiz, respuesta: 'Correcto'});
+			res.render('quizes/answer', {quiz: req.quiz, respuesta: 'Correcto', errors: []});
 		}
 		else{
-			res.render('quizes/answer', {quiz: req.quiz, respuesta: 'Incorrecto'});
+			res.render('quizes/answer', {quiz: req.quiz, respuesta: 'Incorrecto', errors: []});
 		}
 	})
+};
+
+// GET /quizes/new
+exports.new = function(req, res){
+	var quiz = models.Quiz.build( //crea objeto quiz
+		{pregunta: "Pregunta", respuesta: "Respuesta"}
+		);
+	res.render('quizes/new', {quiz: quiz, errors: []});
+};
+
+exports.create = function(req, res){
+	var quiz = models.Quiz.build(req.body.quiz);
+
+	// guarda en DB los campos pregunta y respuesta de quiz
+	quiz
+	.validate()
+	.then(
+		function(err){
+			if (err){
+				res.render("quizes/new", {quiz: quiz, errors: err.errors});
+			}
+			else{
+				quiz
+				.save({fields: ["pregunta", "respuesta"]})
+				.then(function(){res.redirect("/quizes")}) // redireccion HTTP (URL relativo) lista de preguntas
+			}
+		}
+	);
 };
