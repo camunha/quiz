@@ -43,11 +43,32 @@ app.use(function(req, res, next) {
     }
 
     // hacer visible req.session en las vistas
+    //res.locals.session = req.session;
+    next();
+});
+
+app.use(function(req, res, next){
+    if (req.session.user){
+        var hora = (new Date()).getTime();
+
+        if (!req.session.ultTransac)
+            req.session.ultTransac = hora;
+
+        if (!req.path.match(/\/login|\/logout/)){
+            if (hora - req.session.ultTransac > 120000){
+                delete req.session.user;
+            }
+        }
+        else{
+            req.session.ultTransac = hora;
+        }
+    }
     res.locals.session = req.session;
     next();
 });
 
 app.use('/', routes);
+
 
 // error handlers
 
